@@ -1,26 +1,36 @@
-# main.py
-
-import sys
-from pkg.calculator import Calculator
-from pkg.render import render
-
+import os, sys
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
+load_dotenv()
 
 def main():
-    calculator = Calculator()
+
     if len(sys.argv) <= 1:
-        print("Calculator App")
-        print('Usage: python main.py "<expression>"')
-        print('Example: python main.py "3 + 5"')
-        return
+        print('No prompt was provided!!!')
+        sys.exit(1)
 
-    expression = " ".join(sys.argv[1:])
-    try:
-        result = calculator.evaluate(expression)
-        to_print = render(expression, result)
-        print(to_print)
-    except Exception as e:
-        print(f"Error: {e}")
+    user_prompt = sys.argv[1]
+    verbose_flag = len(sys.argv) == 3
 
+    messages = [
+        types.Content(role="user", parts=[types.Part(text=user_prompt)]),
+    ]
+
+
+    api_key = os.environ.get("GEMINI_API_KEY")
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-001",
+        contents=messages
+    )
+
+    if verbose_flag:
+        print(f"User prompt: {user_prompt}")
+        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+
+    print(response.text)
 
 if __name__ == "__main__":
     main()
